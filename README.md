@@ -4,7 +4,7 @@ This is the official repository for the **S**ummaries of **E**vents **A**cross *
 
 ## Getting Started
 
-If you are interested only in the SEAMuS dataset, you can find it in `data/seamus.zip` &mdash; no need to install any dependencies. However, if you would like to try to replicate or adapt results from the paper, please follow the instructions below.
+If you are interested only in the SEAMuS dataset, you can find it in `data/seamus.zip` &mdash; no need to install any dependencies. You also do not need to install any dependencies if you just want to access our model predictions and scores, which can be found in `model_outputs/`. However, if you would like to try to replicate or adapt results from the paper, please follow the instructions below.
 
 This package uses [Poetry](https://python-poetry.org/) for dependency management. Poetry strongly encourages installing all dependencies inside a virtual environment. We used [Conda](https://www.anaconda.com/download/) for this purpose, with Python version 3.11.9. To do the same, start by creating your environment:
 
@@ -35,9 +35,33 @@ python -m spacy download en_core_web_sm
 python -c 'import nltk; nltk.download("punkt_tab")'
 ```
 
-Finally, unzip `data/seamus.zip` to the `data/` directory:
+Finally, unzip the resources in the `data/` directory:
 
 ```
 cd data/
 unzip seamus.zip
+cd ../resources/
+unzip saved_contexts.zip
+unzip saved_prompts.zip
 ```
+
+## Small Model Fine-Tuning
+
+To replicate the fine-tuning runs for BART, T5, and PEGASUS, please see the example bash script for the setting(s) you are interested in under `scripts/training`. You will of course have to adapt these to your compute environment, but the commands given in these scripts are exactly those used to fine-tune the models reported on in the paper.
+
+## Small Model Inference
+
+Reference scripts for inference with any of the above models can be found in `scripts/inference`. Note that there are distinct scripts for the report and combined summarization tasks. Note also that running inference on a given file will automatically compute ROUGE-1, ROUGE-2, ROUGE-LCS, and BERTScore results on the outputs. For results with the other metrics, see `seamus/evaluation/`.
+
+## Issues
+
+Please do not hesitate to create an issue if you encounter any difficulties with, or have any questions about, this repository.
+
+## TODOs
+
+These are some things we're still working on:
+
+- [] Add FActScore results and instructions for evaluation
+- [] Add instructions for AlignScore evaluation
+- [] Add analysis code
+- [] Add annotation interface examples and supplementary materials

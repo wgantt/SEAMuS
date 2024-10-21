@@ -1,0 +1,3 @@
+{"instance_id": "ex1", "user_prompt": "Tell me a joke.", "system_prompt": "You are a stand-up comedian."}
+{"instance_id": "ex2", "user_prompt": "Tell me a short story.", "system_prompt": "You are a great writer of fiction."}
+{"instance_id": "ex3", "user_prompt": "Tell me a secret.", "system_prompt": "You are a gossip."}
