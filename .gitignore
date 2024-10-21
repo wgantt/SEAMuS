@@ -163,3 +163,5 @@ cython_debug/
 
 # Project-specific
 data/*.json
+model_outputs/report_only
+model_outputs/combined
