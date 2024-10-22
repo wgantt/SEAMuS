@@ -43,6 +43,7 @@ unzip seamus.zip
 cd ../resources/
 unzip saved_contexts.zip
 unzip saved_prompts.zip
+unzip supplementary_materials.zip
 ```
 
 ## Small Model Fine-Tuning
@@ -61,7 +62,7 @@ Please do not hesitate to create an issue if you encounter any difficulties with
 
 These are some things we're still working on:
 
-- [] Add FActScore results and instructions for evaluation
-- [] Add instructions for AlignScore evaluation
-- [] Add analysis code
-- [] Add annotation interface examples and supplementary materials
+- [x] Add annotation interface examples and supplementary materials
+- [ ] Add FActScore results and instructions for evaluation
+- [ ] Add instructions for AlignScore evaluation
+- [ ] Add analysis code
