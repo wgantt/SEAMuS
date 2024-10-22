@@ -63,6 +63,7 @@ Please do not hesitate to create an issue if you encounter any difficulties with
 These are some things we're still working on:
 
 - [x] Add annotation interface examples and supplementary materials
+- [x] Add report baseline code
+- [ ] Add extraction quality experiments code
 - [ ] Add FActScore results and instructions for evaluation
 - [ ] Add instructions for AlignScore evaluation
-- [ ] Add analysis code
