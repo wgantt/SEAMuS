@@ -164,8 +164,6 @@ cython_debug/
 # Project-specific
 data/*.json
 data/*.csv
-resources/saved_contexts
-resources/saved_prompts
-resources/supplementary_materials
+resources/*
 model_outputs/report_only
 model_outputs/combined

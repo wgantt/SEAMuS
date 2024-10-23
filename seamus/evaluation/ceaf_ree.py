@@ -90,8 +90,6 @@ trigger_metrics = MetricFamily(
 
 
 def _mention_edit_distance(e1: Entity, e2: Entity) -> float:
-    if len(e1.mentions) != 1 or len(e2.mentions) != 1:
-        breakpoint()
     assert len(e1.mentions) == 1 and len(e2.mentions) == 1
     # normalize
     edit_dist = editdistance.eval(e1.mentions[0].mention, e2.mentions[0].mention)

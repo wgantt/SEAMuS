@@ -35,15 +35,13 @@ python -m spacy download en_core_web_sm
 python -c 'import nltk; nltk.download("punkt_tab")'
 ```
 
-Finally, unzip the resources in the `data/` directory:
+Finally, unzip the SEAMuS data in `data/seamus.zip` and the other resources in `resources.zip`.
 
 ```
 cd data/
 unzip seamus.zip
-cd ../resources/
-unzip saved_contexts.zip
-unzip saved_prompts.zip
-unzip supplementary_materials.zip
+cd ..
+unzip resources.zip
 ```
 
 ## Small Model Fine-Tuning
@@ -64,6 +62,6 @@ These are some things we're still working on:
 
 - [x] Add annotation interface examples and supplementary materials
 - [x] Add report baseline code
-- [ ] Add extraction quality experiments code
+- [x] Add extraction quality experiments code
 - [ ] Add FActScore results and instructions for evaluation
 - [ ] Add instructions for AlignScore evaluation
