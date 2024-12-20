@@ -97,12 +97,14 @@ BERT_SCORE = evaluate.load("bertscore")
 )
 @click.option(
     "--input-format",
+    "-f",
     type=click.Choice(
         [
             "event_only",
             "text_only",
             "text_with_schema",
             "text_with_event",
+            "text_with_report_event",
         ]
     ),
     default="text_with_event",

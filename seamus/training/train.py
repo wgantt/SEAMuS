@@ -149,12 +149,14 @@ FALLBACK_SEP = "@@"
 )
 @click.option(
     "--input-format",
+    "-f",
     type=click.Choice(
         [
             "event_only",
             "text_only",
             "text_with_schema",
             "text_with_event",
+            "text_with_report_event",
         ]
     ),
     default="text_with_event",
@@ -545,7 +547,7 @@ def preprocess(
 
     # Only the report (and source) templates are provided as input
     if input_format == "event_only":
-        # report-only: <report_template>
+        # report-only: <sep> frame_name <sep> Trigger <sep> report_trigger <sep> role1 <sep> role1_report_args <sep> role2 ...
         if task == "report-only":
             report_events = [
                 prefix + format_template(f, t, ["Event", ":"])
@@ -558,7 +560,8 @@ def preprocess(
                 truncation=True,
                 is_split_into_words=True,
             )
-        # combined: <report_template> [SEP] <source_template>
+        # combined: frame_name <sep> Trigger <sep> report_trigger <sep> role1 <sep> role1_report_args <sep> role2 ...
+        #           frame_name <sep> Trigger <sep> report_trigger <sep> role1 <sep> role1_source_args <sep> role2 ...
         else:
             report_events = [
                 prefix + format_template(f, t, ["Report", "Event", ":"])
@@ -579,7 +582,7 @@ def preprocess(
                 is_split_into_words=True,
             )
     elif input_format == "text_only":
-        # report-only: <report>
+        # report-only: report_text
         if task == "report-only":
             reports = [
                 prefix + format_doc(doc, ["Report", ":"]) for doc in examples["report"]
@@ -591,7 +594,7 @@ def preprocess(
                 max_length=max_doc_len,
                 is_split_into_words=True,
             )
-        # combined: <report> [SEP] <source>
+        # combined: report_text <sep> source_text
         else:
             reports = [
                 prefix + format_doc(doc, ["Report", ":"]) for doc in examples["report"]
@@ -608,7 +611,7 @@ def preprocess(
             )
 
     elif input_format == "text_with_schema":
-        # report-only: <report> [SEP] <frame_name> <role1> ... <roleN>
+        # report-only: report_text <sep> frame_name <sep> role1 <sep> role2 ...
         if task == "report-only":
             reports = [
                 prefix + format_doc(doc, ["Report", ":"]) for doc in examples["report"]
@@ -627,7 +630,7 @@ def preprocess(
                 truncation="only_first",
                 is_split_into_words=True,
             )
-        # combined: <report> [SEP] <source> [SEP] <frame_name> <role1> ... <roleN>
+        # combined: report_text <sep> source_text <sep> frame_name <sep> role1 <sep> role2 ...
         else:
             reports = [format_doc(doc) for doc in examples["report"]]
             sources = examples["source"]
@@ -650,7 +653,7 @@ def preprocess(
                 is_split_into_words=True,
             )
     elif input_format == "text_with_event":
-        # report-only: report <sep> frame_name <sep> role1 <sep> role1_args <sep> role2 <sep> role2_args ...
+        # report-only: report_text <sep> frame_name <sep> Trigger <sep> trigger <sep> role1 <sep> role1_args <sep> role2 <sep> role2_args ...
         if task == "report-only":
             reports = [
                 prefix + format_doc(doc, ["Report", ":"]) for doc in examples["report"]
@@ -668,8 +671,8 @@ def preprocess(
                 truncation="only_first",
                 is_split_into_words=True,
             )
-        # combined: report <sep> frame_name <sep> role1 <sep> role1_args <sep> role2 <sep> role2_args ...
-        #           source <sep> frame_name <sep> role1 <sep> role1_args <sep> role2 <sep> role2_args ...
+        # combined: report_text <sep> source_text <sep>
+        #           frame_name <sep> Trigger <sep> trigger <sep> role1 <sep> role1_args <sep> role2 <sep> role2_args ...
         else:
             reports = [format_doc(doc, ["Report", ":"]) for doc in examples["report"]]
             sources = [format_doc(doc, ["Source", ":"]) for doc in examples["source"]]
@@ -698,10 +701,33 @@ def preprocess(
                 text=texts,
                 text_pair=events,
                 padding="max_length",
-                # Truncate the texts first (starting with the source), not the schema
+                # Truncate the texts first (starting with the source), not the event annotations
                 truncation="only_first",
                 is_split_into_words=True,
             )
+    elif input_format == "text_with_report_event":
+        if task == "report-only":
+            raise ValueError(
+                "Input format 'text_with_report_event' is supported only for the 'combined' summarization task."
+            )
+        # combined: report <sep> source <sep> frame_name <sep> Trigger <sep> trigger <sep> role1 <sep> role1_report_args <sep> role2 <sep> role2_report_args ...
+        # Both report and source texts are included in input...
+        reports = [format_doc(doc, ["Report", ":"]) for doc in examples["report"]]
+        sources = [format_doc(doc, ["Source", ":"]) for doc in examples["source"]]
+        texts = [prefix + r + [get_sep_token()] + s for r, s in zip(reports, sources)]
+
+        # ...But for the events, only the report annotations are included
+        events = [
+            format_template(f, t)
+            for f, t in zip(examples["trigger"], examples["report_template"])
+        ]
+        model_inputs = tokenizer(
+            text=texts,
+            text_pair=events,
+            padding="max_length",
+            truncation="only_first",
+            is_split_into_words=True,
+        )
     else:
         raise ValueError(f"Unrecognized input format '{input_format}'")
 
