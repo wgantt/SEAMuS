@@ -18,9 +18,7 @@ def parse_args():
         "gen_json_path",
         type=str,
     )
-    parser.add_argument(
-        "ckpt_path", type=str
-    )
+    parser.add_argument("ckpt_path", type=str)
     parser.add_argument("--data_path", type=str, default=TEST_PATH)
     parser.add_argument(
         "--setting",

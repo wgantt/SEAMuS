@@ -486,8 +486,12 @@ if __name__ == "__main__":
     import os
     from seamus.constants import TRAIN_PATH, DEV_PATH, SAVED_CONTEXTS_PATH
 
-    SOURCE_OVERRIDES_TRAIN_PATH = os.path.join(SAVED_CONTEXTS_PATH, "bm25_train_concat_7.json")
-    SOURCE_OVERRIDES_DEV_PATH = os.path.join(SAVED_CONTEXTS_PATH, "bm25_dev_concat_7.json")
+    SOURCE_OVERRIDES_TRAIN_PATH = os.path.join(
+        SAVED_CONTEXTS_PATH, "bm25_train_concat_7.json"
+    )
+    SOURCE_OVERRIDES_DEV_PATH = os.path.join(
+        SAVED_CONTEXTS_PATH, "bm25_dev_concat_7.json"
+    )
 
     with open(TRAIN_PATH) as f:
         train = json.load(f)

@@ -20,7 +20,7 @@ from seamus.prompt.prompt_utils import (
 DEFAULT_SOURCE_CONTEXT_OVERRIDES = {
     "train": os.path.join(SAVED_CONTEXTS_PATH, "bm25_train_concat_7.json"),
     "dev": os.path.join(SAVED_CONTEXTS_PATH, "bm25_dev_concat_7.json"),
-    "test": os.path.join(SAVED_CONTEXTS_PATH, "bm25_test_concat_7.json")
+    "test": os.path.join(SAVED_CONTEXTS_PATH, "bm25_test_concat_7.json"),
 }
 
 # Must unzip saved_prompts.zip to use this!
