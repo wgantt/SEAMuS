@@ -13,7 +13,7 @@ OUTPUT_DIR="/brtx/603-nvme1/wgantt/SEAMuS-experiments/$TASK-$FORMAT-$RETRIEVAL_S
 
 # These retrieved contexts are used in place of
 # the full, original source documents
-SRC_OVERRIDE_DIR="/brtx/603-nvme1/wgantt/SEAMuS/seamus/resources/saved_contexts/"
+SRC_OVERRIDE_DIR="/brtx/603-nvme1/wgantt/SEAMuS/resources/saved_contexts/"
 TRAIN_SRC_OVERRIDE=$SRC_OVERRIDE_DIR/bm25_train_concat_7.json
 DEV_SRC_OVERRIDE=$SRC_OVERRIDE_DIR/bm25_dev_concat_7.json
 TEST_SRC_OVERRIDE=$SRC_OVERRIDE_DIR/bm25_test_concat_7.json

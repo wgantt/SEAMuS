@@ -10,7 +10,7 @@ DEFAULT_SOURCE_OVERRIDE=$PROJECT_ROOT/resources/saved_contexts/bm25_test_concat_
 MODEL_PATH=$1 # Path to trained model
 HUB_NAME=$2 # Model name as it appears on the HuggingFace hug (e.g. facebook/bart-large)
 DATA_PATH=$3 # SEAMuS/data/{train.json, dev.json, test.json}
-FORMAT=$4 # event_only, text_only, text_with_schema, text_with_event
+FORMAT=$4 # event_only, text_only, text_with_schema, text_with_event, text_with_report_event
 
 export CONDAROOT=/home/wgantt/miniconda3
 export PATH=$CONDAROOT/condabin:$PATH
