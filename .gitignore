@@ -162,6 +162,7 @@ cython_debug/
 #.idea/
 
 # Project-specific
+data/seamus_paraphrases/
 data/*.json
 data/*.csv
 resources/*

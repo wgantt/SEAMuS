@@ -84,15 +84,41 @@ FALLBACK_SEP = "@@"
     "--source-override-path-train",
     type=str,
     default=None,
+    help="path to file with alternative source document context to use for training data "
+    + "(used for retrieval-compressed source contexts)",
 )
 @click.option(
     "--source-override-path-dev",
     type=str,
     default=None,
+    help="path to file with alternative source document context to use for dev data",
 )
 @click.option(
     "--source-override-path-test",
     type=str,
+    default=None,
+    help="path to file with alternative source document context to use for test data",
+)
+@click.option(
+    "--include-paraphrases-dev",
+    is_flag=True,
+    help="whether to include additional examples that use paraphrased source documents (dev split)",
+)
+@click.option(
+    "--include-paraphrases-test",
+    is_flag=True,
+    help="whether to include additional examples that use paraphrased source documents (test split)",
+)
+@click.option(
+    "--ptype-dev",
+    multiple=True,
+    help="which paraphrase types to include in dev (blog, book, news, radio, reddit)",
+    default=None,
+)
+@click.option(
+    "--paraphrase-types-test",
+    multiple=True,
+    help="which paraphrase types to include in test (blog, book, news, radio, reddit)",
     default=None,
 )
 @click.option(
@@ -182,6 +208,10 @@ def train(
     source_override_path_train,
     source_override_path_dev,
     source_override_path_test,
+    include_paraphrases_dev,
+    include_paraphrases_test,
+    ptype_dev,
+    paraphrase_types_test,
     num_epochs,
     patience,
     per_device_train_batch_size,
@@ -204,6 +234,14 @@ def train(
     :param task: the summarization task to be performed (`report-only` or `combined`)
     :param source_override_path_train: a path to a JSON file containing text to use
         for the source document in place of the original source document (train split)
+    :param source_override_path_dev: same as above, but for the dev split
+    :param source_override_path_train: same as above, but for the test split
+    :param include_paraphrases_dev: whether to use additional examples with paraphrased
+        source contexts (dev split)
+    :param include_paraphrases_test: same as above, but for test
+    :param ptype_dev: if include_paraphrases_dev is true, which types of
+        paraphrases to use (choices: blog, book, news, radio, reddit)
+    :param paraphrase_types_test: same as above, but for test
     :param num_epochs: the number of epochs for which training will be run
     :param per_device_train_batch_size: the batch size for training
     :param per_device_eval_batch_size: the batch size for evaluation
@@ -279,7 +317,11 @@ def train(
         )
         dev_data = Dataset.from_generator(
             partial(
-                gen, split="dev", source_context_override_path=source_override_path_dev
+                gen,
+                split="dev",
+                source_context_override_path=source_override_path_dev,
+                include_paraphrases=include_paraphrases_dev,
+                paraphrase_types=ptype_dev or set(),
             )
         )
         test_data = Dataset.from_generator(
@@ -287,6 +329,8 @@ def train(
                 gen,
                 split="test",
                 source_context_override_path=source_override_path_test,
+                include_paraphrases=include_paraphrases_test,
+                paraphrase_types=paraphrase_types_test or set(),
             )
         )
     else:
