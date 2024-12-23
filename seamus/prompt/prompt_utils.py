@@ -484,13 +484,18 @@ def build_combined_text_with_event_few_shot_prompt(
 
 if __name__ == "__main__":
     import os
-    from seamus.constants import TRAIN_PATH, DEV_PATH, SAVED_CONTEXTS_PATH
+    from seamus.constants import (
+        TRAIN_PATH,
+        DEV_PATH,
+        SAVED_CONTEXTS_TRAIN_PATH,
+        SAVED_CONTEXTS_DEV_PATH,
+    )
 
     SOURCE_OVERRIDES_TRAIN_PATH = os.path.join(
-        SAVED_CONTEXTS_PATH, "bm25_train_concat_7.json"
+        SAVED_CONTEXTS_TRAIN_PATH, "bm25_train_concat_7.json"
     )
     SOURCE_OVERRIDES_DEV_PATH = os.path.join(
-        SAVED_CONTEXTS_PATH, "bm25_dev_concat_7.json"
+        SAVED_CONTEXTS_DEV_PATH, "bm25_dev_concat_7.json"
     )
 
     with open(TRAIN_PATH) as f:

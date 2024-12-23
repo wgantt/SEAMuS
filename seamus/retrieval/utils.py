@@ -1,10 +1,18 @@
 import json
+import os
 import Stemmer
 
 from spacy.lang.en import English
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from seamus.constants import DETOKENIZER, SPLIT_TO_PATH, SPLITS, TEXT_FIELDS
+from seamus.constants import (
+    DETOKENIZER,
+    PARAPHRASE_TYPES,
+    SPLIT_TO_PATH,
+    PARAPHRASES_SPLIT_TO_PATH,
+    SPLITS,
+    TEXT_FIELDS,
+)
 
 # Expand: identify the best sentence and include all surrounding sentences
 #         within some context window
@@ -35,14 +43,36 @@ def detokenize_text(split: str, field: str) -> Dict[str, str]:
     return texts
 
 
-def sentence_split_text(split: str, field: str) -> Dict[str, List[str]]:
+def sentence_split_text(
+    split: str, field: str, paraphrase_type: Optional[str] = None
+) -> Dict[str, List[str]]:
     """Split a tokenized text field into sentences
 
     :param split: The split to retrieve the text from
     :param field: The field to retrieve the text from
+    :param paraphrase_type: if not None, will load a paraphrased version of the target text
+        (valid for source texts only)
     :return: A dictionary mapping instance IDs to a list of sentences for the given field
     """
-    texts = detokenize_text(split, field)
+    if paraphrase_type is None:
+        texts = detokenize_text(split, field)
+    else:
+        # paraphrases are already untokenized, so no need for detokenize_text here
+        assert field == "source", "paraphrases are supported only for source texts!"
+        assert (
+            paraphrase_type in PARAPHRASE_TYPES
+        ), f"Invalid paraphrase type '{paraphrase_type}.' Choices are {', '.join(PARAPHRASE_TYPES)}."
+        with open(
+            os.path.join(
+                PARAPHRASES_SPLIT_TO_PATH[split], f"{paraphrase_type}_{split}.jsonl"
+            ),
+            "r",
+        ) as f:
+            data = [json.loads(line) for line in f]
+            texts = {}
+            for item in data:
+                texts[item["id"]] = item["contents"]
+
     for example_id, text in texts.items():
         texts[example_id] = [sent.text for sent in nlp(text).sents]
     return texts

@@ -115,6 +115,11 @@ FALLBACK_SEP = "@@"
     help="whether to include additional examples that use paraphrased source documents (test split)",
 )
 @click.option(
+    "--paraphrase-contexts-overrides",
+    type=click.Path,
+    help="path to file containing paths to context overrides files for paraphrased source documents",
+)
+@click.option(
     "--ptype-train",
     multiple=True,
     help="which paraphrase types to include in train (blog, book, news, radio, reddit)",
@@ -221,6 +226,7 @@ def train(
     include_paraphrases_train,
     include_paraphrases_dev,
     include_paraphrases_test,
+    paraphrase_context_override_file,
     ptype_train,
     ptype_dev,
     ptype_test,
@@ -252,6 +258,10 @@ def train(
         paraphrased source contexts (train split)
     :param include_paraphrases_dev: same as above, but for train
     :param include_paraphrases_test: same as above, but for test
+    :param paraphrase_context_override_file: path to a JSON file with splits
+        as top-level keys, paraphrase types as second-level keys, and values
+        as paths to files with contexts to use in place of the original
+        paraphrased source documents for that data split and paraphrase type.
     :param ptype_train: if include_paraphrases_train is true, which types of
         paraphrases to use (choices: blog, book, news, radio, reddit)
     :param ptype_dev: same as above, but for dev
@@ -317,43 +327,53 @@ def train(
     ), "If you provide source overrides for one split, you must provide them for all splits"
 
     if source_override_path_train is not None:
-        logger.warning("Using source overrides:")
+        logger.warning("Using source overrides for SEAMuS:")
         logger.warning(f"  - Train: {source_override_path_train}")
         logger.warning(f"  - Dev: {source_override_path_train}")
         logger.warning(f"  - Test: {source_override_path_train}")
 
-        train_data = Dataset.from_generator(
-            partial(
-                gen,
-                split="train",
-                source_context_override_path=source_override_path_train,
-                include_paraphrases=include_paraphrases_train,
-                paraphrase_types=ptype_train or set(),
-            )
+    paraphrase_context_overrides = {split: dict() for split in SPLITS}
+    if paraphrase_context_override_file is not None:
+        logger.warning("Using source context overrides for SEAMuS paraphrases:")
+        with open(paraphrase_context_override_file) as f:
+            paraphrase_context_overrides = json.load(f)
+            for split in SPLITS:
+                logger.warning(f"  - Train:")
+                assert split in paraphrase_context_overrides
+                for k, v in paraphrase_context_overrides[split]:
+                    for ptype, pfile in sorted(v.items()):
+                        logger.warning(f"    - {ptype}: {pfile}")
+
+    train_data = Dataset.from_generator(
+        partial(
+            gen,
+            split="train",
+            source_context_override_path=source_override_path_train,
+            include_paraphrases=include_paraphrases_train,
+            paraphrase_types=ptype_train or set(),
+            paraphrase_context_override_paths=paraphrase_context_overrides["train"],
         )
-        dev_data = Dataset.from_generator(
-            partial(
-                gen,
-                split="dev",
-                source_context_override_path=source_override_path_dev,
-                include_paraphrases=include_paraphrases_dev,
-                paraphrase_types=ptype_dev or set(),
-            )
+    )
+    dev_data = Dataset.from_generator(
+        partial(
+            gen,
+            split="dev",
+            source_context_override_path=source_override_path_dev,
+            include_paraphrases=include_paraphrases_dev,
+            paraphrase_types=ptype_dev or set(),
+            paraphrase_context_override_paths=paraphrase_context_overrides["dev"],
         )
-        test_data = Dataset.from_generator(
-            partial(
-                gen,
-                split="test",
-                source_context_override_path=source_override_path_test,
-                include_paraphrases=include_paraphrases_test,
-                paraphrase_types=ptype_test or set(),
-            )
+    )
+    test_data = Dataset.from_generator(
+        partial(
+            gen,
+            split="test",
+            source_context_override_path=source_override_path_test,
+            include_paraphrases=include_paraphrases_test,
+            paraphrase_types=ptype_test or set(),
+            paraphrase_context_override_paths=paraphrase_context_overrides["test"],
         )
-    else:
-        # Use original source contexts
-        train_data = SEAMUS_TRAIN
-        dev_data = SEAMUS_DEV
-        test_data = SEAMUS_TEST
+    )
 
     preprocess_fn = partial(
         preprocess,

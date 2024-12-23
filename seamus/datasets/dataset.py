@@ -9,29 +9,28 @@ from glob import glob
 from tqdm import tqdm
 from typing import Any, Dict, Iterable, Iterator, Optional
 
-from seamus.constants import SPLIT_TO_PATH, PARAPHRASES_SPLIT_TO_PATH, PARAPHRASE_TYPES
+from seamus.constants import (
+    SPLIT_TO_PATH,
+    PARAPHRASES_SPLIT_TO_PATH,
+    PARAPHRASE_TYPES,
+    seamus_key_to_megawika_key,
+)
 
 nlp = spacy.load("en_core_web_sm")
 
 
 def load_paraphrases(
-    split: str, paraphrase_types: Iterable[str] = set()
+    split: str,
+    paraphrase_types: Iterable[str] = set(),
+    paraphrase_context_override_paths: Dict[str, str] = {},
 ) -> Iterator[Dict[str, Any]]:
     """Load SEAMuS examples using paraphrased versions of source documents
 
     :param split: the split for which to generate paraphrased examples
     :param paraphrase_types: the paraphrase types for which to generate examples
+    :param paraphrase_context_override_paths: see `gen` method below.
     :return: SEAMuS examples with paraphrased source documents
     """
-
-    def seamus_key_to_megawika_key(
-        seamus_key: str, paraphrase_type: Optional[str] = None
-    ) -> str:
-        megawika_key = "-".join(seamus_key.split("-")[:3]).lower()
-        if paraphrase_type is not None:
-            megawika_key = megawika_key + "-" + paraphrase_type
-        return megawika_key
-
     # Load original SEAMuS data first
     with open(SPLIT_TO_PATH[split]) as f:
         d = json.load(f)
@@ -49,10 +48,34 @@ def load_paraphrases(
         paraphrase_type = os.path.basename(paraphrase_file).split("_")[0]
         if paraphrase_type not in paraphrase_types:
             continue
+
+        # May want to override the full paraphrased source text
+        # with a condensed version (e.g. condensed via sentence retrieval)
+        source_contexts = {}
+        if paraphrase_type in paraphrase_context_override_paths:
+            with open(paraphrase_context_override_paths[paraphrase_type]) as f:
+                source_contexts = json.load(f)
+
+        # These aren't output in a pre-tokenized format like the
+        # original source contexts, so we take care of that here.
+        source_contexts_tok = {}
+        for k, v in source_contexts.items():
+            source_contexts_tok[k] = [tok.text for s in v for tok in nlp(s)]
+
+        overridden_contexts = 0
+        total_examples = 0
         with open(paraphrase_file) as f:
             for line in tqdm(f, desc=f"Loading examples from {paraphrase_file}"):
                 ex = json.loads(line)
-                p[ex["id"]] = [tok.text for tok in nlp(ex["contents"])]
+                if ex["id"] in source_contexts_tok:
+                    p[ex["id"]] = source_contexts_tok
+                    overridden_contexts
+                else:
+                    p[ex["id"]] = [tok.text for tok in nlp(ex["contents"])]
+
+        print(
+            f"{overridden_contexts}/{total_examples} for paraphrase type {paraphrase_type} had contexts overridden."
+        )
 
     # Create one new example per source document paraphrase
     # WARNING: even though we use the paraphrases in place of the
@@ -62,12 +85,11 @@ def load_paraphrases(
     #          templates anyway if you are working with paraphrased
     #          source texts.
     for ex in d:
-        ex["instance_id"] = seamus_key_to_megawika_key(ex["instance_id"])
         for paraphrase_type in sorted(paraphrase_types):
             p_ex = deepcopy(ex)
-            p_ex["instance_id"] = (
-                ex["instance_id"] + "-" + paraphrase_type
-            )  # paraphrase example ID
+            p_ex["instance_id"] = seamus_key_to_megawika_key(
+                p_ex["instance_id"], paraphrase_type
+            )
             p_ex["source"] = p[p_ex["instance_id"]]  # paraphrased source
             yield p_ex
 
@@ -78,6 +100,7 @@ def gen(
     source_context_override_path: Optional[str] = None,
     include_paraphrases: bool = False,
     paraphrase_types: Iterable[str] = set(),
+    paraphrase_context_override_paths: Dict[str, str] = {},
 ) -> Iterator[Dict[str, Any]]:
     """Generate examples from the SEAMuS dataset
 
@@ -94,6 +117,10 @@ def gen(
     :param paraphrase_types: If include_paraphrases=True, which paraphrase
         types to include (options: blog, book, news, radio, reddit). If unset,
         defaults to all.
+    :param paraphrase_context_override_paths: If include_paraphrase=True,
+        you can use this dictionary to specify for each paraphrase type a JSON
+        file that supplies texts to be used in place of the paraphrased source
+        document (same as source_context_override_path)
     """
     if split_override is not None:
         print(f"Using split override: {split_override}")
@@ -121,7 +148,11 @@ def gen(
         yield ex
 
     if include_paraphrases:
-        yield from load_paraphrases(split, paraphrase_types=paraphrase_types)
+        yield from load_paraphrases(
+            split,
+            paraphrase_types=paraphrase_types,
+            paraphrase_context_override_paths=paraphrase_context_override_paths,
+        )
 
 
 # Caches the original FAMuSSUM splits (no source text overrides)
@@ -131,6 +162,6 @@ SEAMUS_TEST = Dataset.from_generator(partial(gen, split="test"))
 
 if __name__ == "__main__":
     tot = 0
-    for ex in gen("dev", include_paraphrases=False, paraphrase_types={"news"}):
+    for ex in gen("dev", include_paraphrases=True, paraphrase_types={"news"}):
         tot += 1
     print(tot)

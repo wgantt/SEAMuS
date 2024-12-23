@@ -4,9 +4,16 @@ import os
 import torch
 
 from sentence_transformers import SentenceTransformer
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from seamus.constants import SPLIT_TO_PATH, SAVED_CONTEXTS_PATH, DETOKENIZER
+from seamus.constants import (
+    SPLIT_TO_PATH,
+    SAVED_CONTEXTS_SPLIT_TO_PATH,
+    PARAPHRASES_SPLIT_TO_PATH,
+    PARAPHRASE_TYPES,
+    DETOKENIZER,
+    ID_TYPES,
+)
 from seamus.retrieval.utils import detokenize_text, sentence_split_text
 from tqdm import tqdm
 
@@ -20,7 +27,8 @@ def retrieve_source_context_transformers(
     split: str,
     context_window_size: int = 5,
     mode: str = "concat",
-    **transformer_kwargs,
+    paraphrase_type: Optional[str] = None,
+    id_type: str = "seamus" ** transformer_kwargs,
 ) -> Dict[str, List[str]]:
     """Select a context window from the source for a given report using a sentence transformer model
 
@@ -32,14 +40,32 @@ def retrieve_source_context_transformers(
         k value in the top-k sentences to retrieve.
     :param mode: The method to use for selecting context. Options are "expand"
         and "concatenate" (see CONTEXT_SELECTION_MODES at top of file)
+    :param paraphrase_type: if non-None, will retrieve sentences using the
+        corresponding paraphrased version of the source context, rather than
+        the original source text.
+    :param id_type: whether to use SEAMuS- or MegaWika-style IDs in the output.
     :param transformer_kwargs: Additional keyword arguments to pass to the SentenceTransformer
     :return: A dictionary mapping instance IDs to a list of context sentences
     """
+    with open(SPLIT_TO_PATH[split], "r") as f:
+        seamus_data = json.load(f)
+        seamus_data = {ex["instance_id"]: ex for ex in seamus_data}
 
     # load data
-    with open(SPLIT_TO_PATH[split], "r") as f:
-        data = json.load(f)
-        data = {ex["instance_id"]: ex for ex in data}
+    if paraphrase_type is not None:
+        assert (
+            paraphrase_type in PARAPHRASE_TYPES
+        ), f"Invalid paraphrase type '{paraphrase_type}'. Choices are: {', '.join(PARAPHRASE_TYPES)}"
+        with open(
+            os.path.join(
+                PARAPHRASES_SPLIT_TO_PATH[split], f"{paraphrase_type}_{split}.jsonl"
+            ),
+            "r",
+        ) as f:
+            data = [json.loads(line) for line in f]
+            data = {ex["id"]: ex for ex in data}
+    else:
+        data = seamus_data
 
     # total source arguments that appear within the context window
     source_args_in_context = 0
@@ -56,6 +82,18 @@ def retrieve_source_context_transformers(
     source_sents = sentence_split_text(split, "source")
     contexts = {}
     for example_id, report in tqdm(report_texts.items(), desc="Retrieving contexts..."):
+        source_sents = sentence_split_text(split, "source", paraphrase_type)
+        contexts = {}
+        for seamus_example_id, report in tqdm(
+            report_texts.items(), desc="Retrieving contexts..."
+        ):
+            if id_type == "megawika":
+                example_id = seamus_key_to_megawika_key(
+                    seamus_example_id, paraphrase_type
+                )
+            else:
+                example_id = seamus_example_id
+
         source = source_sents[example_id]
 
         # The query is the entire report text
@@ -93,7 +131,7 @@ def retrieve_source_context_transformers(
 
         # See how many source arguments actually
         # appear in the retrieved context
-        ex = data[example_id]
+        ex = seamus_data[seamus_example_id]
         for role, role_data in ex["source_template"].items():
             for arg in role_data["arguments"]:
                 total_source_args += 1
@@ -117,15 +155,24 @@ def retrieve_source_context_transformers(
 @click.option("--output_path", "-o", type=str, default=None)
 @click.option("--context-window-size", "-w", type=int, default=5)
 @click.option("--mode", "-m", type=str, default="concat")
-def get_source_contexts(split, output_path, model_name, context_window_size, mode):
+@click.option(
+    "--paraphrase-type", "-p", type=click.Choice(PARAPHRASE_TYPES), default=None
+)
+@click.option("--id-type", "-t", type=click.Choice(ID_TYPES), default="seamus")
+def get_source_contexts(
+    split, output_path, model_name, context_window_size, mode, id_type
+):
     contexts = retrieve_source_context_transformers(
-        model_name, split, context_window_size, mode
+        model_name, split, context_window_size, mode, paraphrase_type, id_type
     )
 
     if output_path is None:
         model_name = model_name.split("/")[-1]
-        output_path = f"{model_name}_{split}_{mode}_{context_window_size}.json"
-        output_path = os.path.join(SAVED_CONTEXTS_PATH, output_path)
+        if paraphrase_type is None:
+            output_path = f"{model_name}_{split}_{mode}_{context_window_size}.json"
+        else:
+            output_path = f"{model_name}_{paraphrase_type}_{split}_{mode}_{context_window_size}.json"
+        output_path = os.path.join(SAVED_CONTEXTS_SPLIT_TO_PATH[split], output_path)
 
     with open(output_path, "w") as f:
         json.dump(contexts, f, indent=2)

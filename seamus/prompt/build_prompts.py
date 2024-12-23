@@ -2,7 +2,13 @@ import click
 import json
 import os
 
-from seamus.constants import SPLIT_TO_PATH, SAVED_CONTEXTS_PATH, SAVED_PROMPTS_PATH
+from seamus.constants import (
+    SPLIT_TO_PATH,
+    SAVED_CONTEXTS_TRAIN_PATH,
+    SAVED_CONTEXTS_DEV_PATH,
+    SAVED_CONTEXTS_TEST_PATH,
+    SAVED_PROMPTS_PATH,
+)
 from seamus.prompt.prompt_utils import (
     build_report_only_event_only_prompt,
     build_report_only_text_only_prompt,
@@ -18,9 +24,9 @@ from seamus.prompt.prompt_utils import (
 
 
 DEFAULT_SOURCE_CONTEXT_OVERRIDES = {
-    "train": os.path.join(SAVED_CONTEXTS_PATH, "bm25_train_concat_7.json"),
-    "dev": os.path.join(SAVED_CONTEXTS_PATH, "bm25_dev_concat_7.json"),
-    "test": os.path.join(SAVED_CONTEXTS_PATH, "bm25_test_concat_7.json"),
+    "train": os.path.join(SAVED_CONTEXTS_TRAIN_PATH, "bm25_train_concat_7.json"),
+    "dev": os.path.join(SAVED_CONTEXTS_DEV_PATH, "bm25_dev_concat_7.json"),
+    "test": os.path.join(SAVED_CONTEXTS_TEST_PATH, "bm25_test_concat_7.json"),
 }
 
 # Must unzip saved_prompts.zip to use this!
