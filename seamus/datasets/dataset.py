@@ -32,9 +32,6 @@ def load_paraphrases(
             megawika_key = megawika_key + "-" + paraphrase_type
         return megawika_key
 
-    if split == "train":
-        raise ValueError("No paraphrases available for train split.")
-
     # Load original SEAMuS data first
     with open(SPLIT_TO_PATH[split]) as f:
         d = json.load(f)

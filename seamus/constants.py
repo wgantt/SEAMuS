@@ -20,10 +20,11 @@ SPLIT_TO_PATH = {
 # Paths to paraphrased source documents
 PARAPHRASE_TYPES = frozenset({"blog", "book", "news", "radio", "reddit"})
 PARAPHRASES_PATH = os.path.join(DATA_PATH, "seamus_paraphrases")
+PARAPHRASES_TRAIN_PATH = os.path.join(PARAPHRASES_PATH, "train")
 PARAPHRASES_DEV_PATH = os.path.join(PARAPHRASES_PATH, "dev")
 PARAPHRASES_TEST_PATH = os.path.join(PARAPHRASES_PATH, "test")
 PARAPHRASES_SPLIT_TO_PATH = {
-    "train": None,
+    "train": PARAPHRASES_TRAIN_PATH,
     "dev": PARAPHRASES_DEV_PATH,
     "test": PARAPHRASES_TEST_PATH,
 }
