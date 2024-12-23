@@ -8,8 +8,8 @@ import os
 import sys
 import transformers
 
-from seamus.constants import DETOKENIZER
-from seamus.datasets.dataset import SEAMUS_TRAIN, SEAMUS_DEV, SEAMUS_TEST, gen
+from seamus.constants import DETOKENIZER, SPLITS
+from seamus.datasets.dataset import gen
 from datasets import Dataset
 from datasets.formatting.formatting import LazyBatch
 from functools import partial
@@ -115,8 +115,8 @@ FALLBACK_SEP = "@@"
     help="whether to include additional examples that use paraphrased source documents (test split)",
 )
 @click.option(
-    "--paraphrase-contexts-overrides",
-    type=click.Path,
+    "--paraphrase-context-override-file",
+    type=click.Path(),
     help="path to file containing paths to context overrides files for paraphrased source documents",
 )
 @click.option(
@@ -327,7 +327,7 @@ def train(
     ), "If you provide source overrides for one split, you must provide them for all splits"
 
     if source_override_path_train is not None:
-        logger.warning("Using source overrides for SEAMuS:")
+        logger.warning("Using source context overrides for SEAMuS:")
         logger.warning(f"  - Train: {source_override_path_train}")
         logger.warning(f"  - Dev: {source_override_path_train}")
         logger.warning(f"  - Test: {source_override_path_train}")
@@ -340,9 +340,8 @@ def train(
             for split in SPLITS:
                 logger.warning(f"  - Train:")
                 assert split in paraphrase_context_overrides
-                for k, v in paraphrase_context_overrides[split]:
-                    for ptype, pfile in sorted(v.items()):
-                        logger.warning(f"    - {ptype}: {pfile}")
+                for ptype, pfile in paraphrase_context_overrides[split].items():
+                    logger.warning(f"    - {ptype}: {pfile}")
 
     train_data = Dataset.from_generator(
         partial(

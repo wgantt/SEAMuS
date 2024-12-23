@@ -68,10 +68,11 @@ def load_paraphrases(
             for line in tqdm(f, desc=f"Loading examples from {paraphrase_file}"):
                 ex = json.loads(line)
                 if ex["id"] in source_contexts_tok:
-                    p[ex["id"]] = source_contexts_tok
-                    overridden_contexts
+                    p[ex["id"]] = source_contexts_tok[ex["id"]]
+                    overridden_contexts += 1
                 else:
                     p[ex["id"]] = [tok.text for tok in nlp(ex["contents"])]
+                total_examples += 1
 
         print(
             f"{overridden_contexts}/{total_examples} for paraphrase type {paraphrase_type} had contexts overridden."
@@ -84,7 +85,9 @@ def load_paraphrases(
     #          are no longer valid. You should not be using the source
     #          templates anyway if you are working with paraphrased
     #          source texts.
-    for ex in d:
+    for ex in tqdm(
+        d, desc=f"Loading {', '.join(sorted(paraphrase_types))} paraphrases"
+    ):
         for paraphrase_type in sorted(paraphrase_types):
             p_ex = deepcopy(ex)
             p_ex["instance_id"] = seamus_key_to_megawika_key(
@@ -155,13 +158,16 @@ def gen(
         )
 
 
-# Caches the original FAMuSSUM splits (no source text overrides)
-SEAMUS_TRAIN = Dataset.from_generator(partial(gen, split="train"))
-SEAMUS_DEV = Dataset.from_generator(partial(gen, split="dev"))
-SEAMUS_TEST = Dataset.from_generator(partial(gen, split="test"))
-
 if __name__ == "__main__":
     tot = 0
-    for ex in gen("dev", include_paraphrases=True, paraphrase_types={"news"}):
+    for ex in gen(
+        "dev",
+        include_paraphrases=True,
+        paraphrase_types={"news", "reddit"},
+        paraphrase_context_override_paths={
+            "news": "resources/saved_contexts/dev/bm25_news_dev_concat_7.json",
+            "reddit": "resources/saved_contexts/dev/bm25_reddit_dev_concat_7.json",
+        },
+    ):
         tot += 1
     print(tot)
