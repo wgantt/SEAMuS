@@ -42,6 +42,7 @@ SUMMARIZATION_MODELS = {
     "google/pegasus-large": "seq2seq",
     "google/pegasus-cnn_dailymail": "seq2seq",
     "t5-large": "seq2seq",
+    "google/flan-t5-large": "seq2seq"
 }
 DEFAULT_MODEL = "facebook/bart-large"
 
@@ -50,7 +51,7 @@ METEOR = evaluate.load("meteor")
 BERT_SCORE = evaluate.load("bertscore")
 
 # This is quite a bit longer than
-# almost summaries in the dataset
+# most summaries in the dataset
 MAX_SUMMARY_LENGTH = 256
 
 # Special role separator token
