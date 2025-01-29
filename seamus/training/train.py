@@ -77,7 +77,7 @@ FALLBACK_SEP = "@@"
 @click.option(
     "--task",
     "-t",
-    type=click.Choice(["report-only", "combined"]),
+    type=click.Choice(["report-only", "source-only", "combined"]),
     default="report-only",
     help="the summarization task",
 )
@@ -674,6 +674,8 @@ def preprocess(
                 max_length=max_doc_len,
                 is_split_into_words=True,
             )
+        elif task == "source-only":
+            raise NotImplementedError()
         # combined: report_text <sep> source_text
         else:
             reports = [
@@ -710,6 +712,8 @@ def preprocess(
                 truncation="only_first",
                 is_split_into_words=True,
             )
+        elif task == "source-only":
+            raise NotImplementedError()
         # combined: report_text <sep> source_text <sep> frame_name <sep> role1 <sep> role2 ...
         else:
             reports = [format_doc(doc) for doc in examples["report"]]
@@ -751,8 +755,24 @@ def preprocess(
                 truncation="only_first",
                 is_split_into_words=True,
             )
-        # combined: report_text <sep> source_text <sep>
-        #           frame_name <sep> Trigger <sep> trigger <sep> role1 <sep> role1_args <sep> role2 <sep> role2_args ...
+        # source-only: report_text <sep> frame_name <sep> Trigger <sep> trigger <sep> role1 <sep> role1_args <sep> role2 <sep> role2_args ...
+        elif task == "source-only":
+            sources = [prefix + format_doc(doc, ["Source", ":"]) for doc in examples["source"]]
+
+            # ...But for the events, only the source annotations are included
+            events = [
+                format_template(f, t, is_report=False)
+                for f, t in zip(examples["trigger"], examples["source_template"])
+            ]
+            model_inputs = tokenizer(
+                text=sources,
+                text_pair=events,
+                padding="max_length",
+                truncation="only_first",
+                is_split_into_words=True,
+            )
+            # combined: report_text <sep> source_text <sep>
+            #           frame_name <sep> Trigger <sep> trigger <sep> role1 <sep> role1_args <sep> role2 <sep> role2_args ...
         else:
             reports = [format_doc(doc, ["Report", ":"]) for doc in examples["report"]]
             sources = [format_doc(doc, ["Source", ":"]) for doc in examples["source"]]
@@ -786,7 +806,7 @@ def preprocess(
                 is_split_into_words=True,
             )
     elif input_format == "text_with_report_event":
-        if task == "report-only":
+        if task == "report-only" or task == "source-only":
             raise ValueError(
                 "Input format 'text_with_report_event' is supported only for the 'combined' summarization task."
             )
@@ -800,6 +820,27 @@ def preprocess(
         events = [
             format_template(f, t)
             for f, t in zip(examples["trigger"], examples["report_template"])
+        ]
+        model_inputs = tokenizer(
+            text=texts,
+            text_pair=events,
+            padding="max_length",
+            truncation="only_first",
+            is_split_into_words=True,
+        )
+    elif input_format == "source_with_source_event":
+        if task == "report-only":
+            raise ValueError(
+                "Input format 'source_with_source_event' is supported only for the 'combined' summarization task."
+            )
+        # combined: source <sep> frame_name <sep> Trigger <sep> trigger <sep> role1 <sep> role1_source_args <sep> role2 <sep> role2_source_args ...
+        # Only the source text is included in input...
+        reports = [prefix + format_doc(doc, ["Source", ":"]) for doc in examples["source"]]
+
+        # ...But for the events, only the source annotations are included
+        sources = [
+            format_template(f, t, is_report=False)
+            for f, t in zip(examples["trigger"], examples["source_template"])
         ]
         model_inputs = tokenizer(
             text=texts,
